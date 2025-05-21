@@ -53,6 +53,7 @@ logic [XLEN-1:0] memory_write_addr; //Belleğin hangi adresine yazacaksak o adre
 logic            memory_write_enable; // Hafızaya yazabilmemiz için hafızanın write enable'ının 1 olması gerekir.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////FETCH AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 always_ff @(posedge clk_i or negedge rstn_i) begin  : programCounter_change_flipFlop  // program counter'ın değiştiği blok
     if(!rstn_i) begin
         pc_q <= 'h8000_0000; // eğer reset sinyali 0 ise program counter'ına 0 değeri atanır yani program counter'ı resetlenir. PC'yi 8000_0000 yapmamızın sebebi
@@ -86,7 +87,10 @@ always_comb begin : programCounter_change_comb
     /* MEM_SIZE'ı 4 ile çarpmamızın sebebi, MEM_SIZE bize aslında KAÇ ADET WORD olduğunu gösteriyor yani 1024 adet WORD'umuz var fakat bir WORD İÇİNDE 4 BYTE OLDUĞU İÇİN  MEM_SIZE * 4 yapıyoruz ve belleğin
     toplam boyutunu BYTE CİNSİNDEN HESAPLIYORUZ Kİ PROGRAM COUNTER BYTE BYTE İLERLEDİĞİ İÇİN TOPLAM BYTE ALANINI HESAPLAMIŞ OLALIM.*/
 end
+///////////////////////////////////////FETCH AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 
+
+//////////////////////////////////////////DECODE AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 always_comb begin : decode_block   //instr_d içindeki instruction'un decode edilmesi, bu aşamada instr_d'nin belirli kısımlarındaki OPCODE'ların ne olduğuna göre case'ler açıp o case'ler içinde o OPCODE'nin görevi
                                    //neyse onları yapıcaz. Opcode dediğimiz kısım istr_d'nin son 7 biti yani instr_d[6:0] kısmı.
     
@@ -205,7 +209,9 @@ always_comb begin : decode_block   //instr_d içindeki instruction'un decode edi
         default: ;
     endcase
 end
+//////////////////////////////////////////DECODE AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////EXECUTE AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 always_comb begin : execute_block  //
     // Burada eğer herhangi bir case durumuna girmezsek, bir önceki değeri tutup latch oluşturmasın diye en başta bütün verileri sıfırlıyoruz.
     jump_pc_valid_d     = 0;
@@ -414,7 +420,9 @@ always_comb begin : execute_block  //
         default: ;
     endcase
 end
+//////////////////////////////////////////EXECUTE AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////MEMORY//////////////////////////////////////////////////////////////////////////////////////////////
 always_ff @(posedge clk_i or negedge rstn_i) begin   //Store işlemi için gerekli kod bloğu
     if(!rstn_i) begin
     end
@@ -430,6 +438,9 @@ always_ff @(posedge clk_i or negedge rstn_i) begin   //Store işlemi için gerek
         endcase
     end
 end
+//////////////////////////////////////////MEMORY/////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////WRITE BACK AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 
 //write back aşaması, işlemciden çıkan bir sonucu register-file'a yazma işlemi için kullanılır, örnek olarak ADD, SUB, MUL ya da LD, LW, LH gibi işlemler için kullanılır. ADD X3, X2, X1, X2 ve X1 değerini topla
 //ve sonucu X3 register'ına yaz şeklinde bir örnek verilebilir. Donanım tarafında şöyle gösterilir, rd_data = x1 + x2, rf[x3] = rd_data.
@@ -447,15 +458,7 @@ end
                 rf[instr_d[11:7]] <= rd_data; //32 adet 32 bitlik register file'ımız olduğu için instr_d[11:7] yani 5 bitlik kısım yetiyor çünkü 2^5 = 32 adet register'a da ulaşmış oluyoruz. rd_data zaten 32 bit.
             end
     end
-
-
-/*1kb'lık instruction memory tasarımı*/
-/*1kb'lık data memory tasarımı*/
-/*fetch aşamasının tasarımı*/
-/*decode aşamasının tasarımı*/
-/*execute and memory aşamasının tasarımı*/
-/*write_back aşamasının tasarımı*/
-
+//////////////////////////////////////////WRITE BACK AŞAMASI//////////////////////////////////////////////////////////////////////////////////////
 
 
 endmodule

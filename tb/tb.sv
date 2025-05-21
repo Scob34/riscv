@@ -56,7 +56,7 @@ module tb ();
         rstn = 1; // 4 birim saniye sonra reset sinyali 1 oluyor ki program çalışmaya başlasın çünkü reset sinyali negatif edge ile çalışıyor
                   // bu nedenle reset sinyali 0 olduğunda program reset halinde oluyor.
 
-        #10000; //10000 birim saniye bekliyoruz 
+        #4000; //10000 birim saniye bekliyoruz 
 
         //
         for(int i = 0; i<10; i++) begin

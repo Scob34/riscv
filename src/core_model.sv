@@ -2,7 +2,7 @@ module core_model
 import riscv_pkg::*;
 (input  logic clk_i, rstn_i,          //instructor memory için CLK ve RST
  input  logic [XLEN-1:0] addr_i,
- input  logic            update_o,
+ output logic            update_o,
  output logic [XLEN-1:0] data_o,
  output logic [XLEN-1:0] pc_o,
  output logic [XLEN-1:0] instr_o,
@@ -18,9 +18,7 @@ parameter int MEM_SIZE = 2048; // Memory tanımlamalarında bu parametreyi kulla
 logic [31:0]     iMem [MEM_SIZE-1:0]; // instruction memory tanımlamasını yaptık
 logic [31:0]     dMem [MEM_SIZE-1:0]; // data memory tanımlamasını yaptık
 logic [XLEN-1:0] rf [31:0];       //32 bitlik 32 adet register file(rf) oluşturduk
-initial begin
-$readmemh["C:/vivadoProjeler/risc-v_Pipelined/test/test.hex", iMem, 0, MEM_SIZE];
-end
+initial $readmemh("./test/test.hex", iMem, 0, MEM_SIZE);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -57,12 +55,13 @@ logic            memory_write_enable; // Hafızaya yazabilmemiz için hafızanı
 
 always_ff @(posedge clk_i or negedge rstn_i) begin  : programCounter_change_flipFlop  // program counter'ın değiştiği blok
     if(!rstn_i) begin
-        pc_q <= '0;         // eğer reset sinyali 0 ise program counter'ına 0 değeri atanır yani program counter'ı resetlenir.
-        update_o <= '0;     // eğer program counter'ın şimdiki değerine(pc_q) sonraki program counter(pc_d) ataması yapılmadıysa update_o = 0 yapılarak işlemin gerçekleşmediği gösterilir.
+        pc_q <= 'h8000_0000; // eğer reset sinyali 0 ise program counter'ına 0 değeri atanır yani program counter'ı resetlenir. PC'yi 8000_0000 yapmamızın sebebi
+                             // SPIKE SIMULATORU'nun RISC-V'da program counter'ı 0x8000_0000 adresinden başlatmasıdır.
+        update_o <= 0;       // eğer program counter'ın şimdiki değerine(pc_q) sonraki program counter(pc_d) ataması yapılmadıysa update_o = 0 yapılarak işlemin gerçekleşmediği gösterilir.
     end
     else begin
         pc_q <= pc_d;       // eğer reset inyali 1 ise program counter'ına sıradaki program counter'ı atanır,
-        update_o <= '1;     //eğer program counter'ın şimdiki değerine(pc_q) sonraki program counter(pc_d) ataması yapıldıysa update_o = 1 yapılarak bu işlemin gerçekleşmiş olduğu gösterilir.
+        update_o <= 1;     //eğer program counter'ın şimdiki değerine(pc_q) sonraki program counter(pc_d) ataması yapıldıysa update_o = 1 yapılarak bu işlemin gerçekleşmiş olduğu gösterilir.
     end
 
 end
@@ -74,13 +73,13 @@ always_comb begin : programCounter_change_comb
     else                       // yukarıdaki pc_q <= pc_d sayesinde
         pc_d = pc_q + 4;       //burada ise yeni program counter eski program counter'ın üstüne + 4 eklenmiş hali olarak devam ediyor.
     
-    instr_d = iMem[pc_d[$clog2(MEM_SIZE*4) - 1 : 2]]; /* Burada pc_d[$clog2(MEM_SIZE-1):2] ifadesi şunun için var, pc_d yukarıda [XLEN-1:0] şeklinde tanımlandı yani 32 bit, fakat bizim Memory Size'ımız 1024 yani
-    adresleme yapmak için 32 bite değil yalnızca 10 bite ihtiyacımız var bu nedenle $clog2 fonksiyonunu kullanarak pc_d'yi 32 bitten 10 bite indirgiyoruz. Bu nasıl oluyor $clog2(parametre) fonksiyonu
+    instr_d = iMem[pc_q[$clog2(MEM_SIZE*4) - 1 : 2]]; /* Burada pc_q[$clog2(MEM_SIZE-1):2] ifadesi şunun için var, pc_q yukarıda [XLEN-1:0] şeklinde tanımlandı yani 32 bit, fakat bizim Memory Size'ımız 1024 yani
+    adresleme yapmak için 32 bite değil yalnızca 10 bite ihtiyacımız var bu nedenle $clog2 fonksiyonunu kullanarak pc_q'yi 32 bitten 10 bite indirgiyoruz. Bu nasıl oluyor $clog2(parametre) fonksiyonu
     bir sayının 2 tabanındaki logaritmasını hesaplar, bu nedenle $clog2(MEM_SIZE-1) ifadesi MEM_SIZE değeri 1024 olduğu için 1024-1 = 1023 sayısının 2 tabanındaki logaritmasını hesaplar bu da 10'a eşittir.
-    Bu durumda pc_d[$clog2(MEM_SIZE-1) - 1 : 0] ifadesi aslında pc_d[(10-1):0] => pc_d[9:0] şekline indirgenmiş oluyor yani pc_d(sıradaki program counter) değerinin SON 10 BİTİNE indirgenmiş olduk.*/
+    Bu durumda pc_q[$clog2(MEM_SIZE-1) - 1 : 0] ifadesi aslında pc_d[(10-1):0] => pc_q[9:0] şekline indirgenmiş oluyor yani pc_q(sıradaki program counter) değerinin SON 10 BİTİNE indirgenmiş olduk.*/
 
-    /*NOT: instr_d = iMem[pc_d[$clog2(MEM_SIZE) - 1 : 0]]; değil de instr_d = iMem[pc_d[$clog2(MEM_SIZE) - 1 : 2]]; yapmamızın sebebi iMem'in logic [31:0]     iMem [MEM_SIZE-1:0]; şeklinde WORD ADRESLEME
-    yapmasından kaynaklı yani iMem[0] = {byte3, byte2, byte1, byte0}, iMem[1] = {byte7,byte6,byte5,byte4} gibi. instr_d = iMem[pc_d[$clog2(MEM_SIZE) - 1 : 2]]; risc-v'da bu şekilde alt iki biti çıkardığımız zaman 
+    /*NOT: instr_d = iMem[pc_q[$clog2(MEM_SIZE) - 1 : 0]]; değil de instr_d = iMem[pc_q[$clog2(MEM_SIZE) - 1 : 2]]; yapmamızın sebebi iMem'in logic [31:0]     iMem [MEM_SIZE-1:0]; şeklinde WORD ADRESLEME
+    yapmasından kaynaklı yani iMem[0] = {byte3, byte2, byte1, byte0}, iMem[1] = {byte7,byte6,byte5,byte4} gibi. instr_d = iMem[pc_q[$clog2(MEM_SIZE) - 1 : 2]]; risc-v'da bu şekilde alt iki biti çıkardığımız zaman 
     BYTE ADRESLEME MODUNDAN WORD ADRESLEME MODUNA GEÇİYORUZ. Eğer bunu yapmazsak mesela adres 00000004 olduğunda iMem[1]'e erişmesi gerekirken iMem[4]'e erişir bu da yanlıştır çünkü 00000004 ifadesi 4. byte'ı
     yani iMem[1]'in başlangıç adresini ifade eder.*/
 
@@ -115,7 +114,7 @@ always_comb begin : decode_block   //instr_d içindeki instruction'un decode edi
         OpcodeJalr:
             if(instr_d[14:12] == F3_JALR) begin
                 rs1_data = rf[instr_d[19:15]];
-                imm_data[31:12] = instr_d[31];
+                imm_data[31:12] = {20{instr_d[31]}};
                 imm_data[11:0]  = instr_d[31:20];
             end
         
@@ -133,6 +132,7 @@ always_comb begin : decode_block   //instr_d içindeki instruction'un decode edi
                     imm_data[4:1]   = instr_d[11:8];
                     imm_data[0]     = 1'b0;
                 end
+                default: ;
             endcase
         OpcodeLoad:                  //aynı şekilde opcodebranch'daki olayın aynısını burada yapıyoruz.
             case(instr_d[14:12])     //FUNCT3 koduna bakıyoruz
@@ -141,6 +141,7 @@ always_comb begin : decode_block   //instr_d içindeki instruction'un decode edi
                     imm_data[31:12] = {20{instr_d[31]}};
                     imm_data[11:0]  = instr_d[31:20];
                 end
+                default: ;
             endcase
         OpcodeStore:
             case(instr_d[14:12])     //FUNCT3 koduna bakıyoruz
@@ -151,6 +152,7 @@ always_comb begin : decode_block   //instr_d içindeki instruction'un decode edi
                     imm_data[11:5]  = instr_d[31:25];
                     imm_data[4:0]   = instr_d[11:7];
                 end
+                default: ;
             endcase
         OpcodeOpImm:
             case(instr_d[14:12])     //FUNCT3 koduna bakıyoruz
@@ -174,6 +176,7 @@ always_comb begin : decode_block   //instr_d içindeki instruction'un decode edi
                         shamt_data = instr_d[24:20];
                         rs1_data   = rf[instr_d[19:15]];
                     end
+                default: ;
             endcase
         OpcodeOp:
             case(instr_d[14:12])
@@ -197,6 +200,7 @@ always_comb begin : decode_block   //instr_d içindeki instruction'un decode edi
                         rs1_data   = rf[instr_d[19:15]];
                         rs2_data   = rf[instr_d[24:20]];
                     end
+                default: ;
             endcase
         default: ;
     endcase
@@ -218,18 +222,21 @@ always_comb begin : execute_block  //
             rf_write_enable = 1'b1;      //rf_write_enable 1 olarak ayarlandı ki yazma işlemi gerçekleşebilsin.
         end
         OpcodeAuipc: begin
-            rd_data = imm_data + pc_d;   //register destination data, yani hedef register verisi imm_data + bir sonraki program counter olarak ayarlandı.
+            rd_data = pc_q + imm_data;   //register destination data, yani hedef register verisi imm_data + bir sonraki program counter olarak ayarlandı.
             rf_write_enable = 1'b1;
         end
         OpcodeJal: begin
             jump_pc_valid_d = 1'b1;
             jump_pc_d = imm_data + pc_q;
             rd_data = pc_q + 4;
+            rf_write_enable = 1'b1;      //rf_write_enable 1 olarak ayarlandı ki yazma işlemi gerçekleşebilsin.
         end
         OpcodeJalr: begin
             jump_pc_valid_d = 1'b1;
             jump_pc_d = imm_data + rs1_data;
+            jump_pc_d[0] = 1'b0; // Burada en son bit 0 yapılıyor çünkü JALR komutunda en son bitin 0 olması gerekiyor.
             rd_data = pc_q + 4;
+            rf_write_enable = 1'b1;      //rf_write_enable 1 olarak ayarlandı ki yazma işlemi gerçekleşebilsin.
         end
         OpcodeBranch:
             case(instr_d[14:12])
@@ -256,7 +263,8 @@ always_comb begin : execute_block  //
              F3_BGEU: if(rs1_data >= rs2_data) begin   // BRANCH IF GREATER OR EQUAL(UNSIGNED)
                 jump_pc_d = pc_q + imm_data;
                 jump_pc_valid_d = 1'b1; 
-             end 
+             end
+             default: ; 
             endcase
         OpcodeLoad:
             case(instr_d[14:12])
@@ -292,6 +300,7 @@ always_comb begin : execute_block  //
                                                                                  //yükleme yapıyoruz bu nedenle son 16 biti[15:0] çekiyoruz.
                 rf_write_enable = 1'b1;
              end
+             default: ;
             endcase
         OpcodeStore:
             case(instr_d[14:12])
@@ -311,6 +320,7 @@ always_comb begin : execute_block  //
                 memory_write_data    = rs2_data;  //yine risc-v instruction setindeki talimatlara göre memory_write_data = rs2_data atamasını yaptık.
                 memory_write_addr    = rs1_data + imm_data;
              end
+             default: ;
             endcase
         OpcodeOpImm:
             case(instr_d[14:12])
@@ -336,7 +346,7 @@ always_comb begin : execute_block  //
                 rf_write_enable = 1'b1;
                 rd_data = rs1_data | imm_data;
              end
-             F3_ADDI: begin
+             F3_ANDI: begin
                 rf_write_enable = 1'b1;
                 rd_data = rs1_data & imm_data;
              end
@@ -353,6 +363,7 @@ always_comb begin : execute_block  //
                     rf_write_enable = 1'b1;
                     rd_data = rs1_data >>> shamt_data;
                 end
+            default: ;
             endcase
         OpcodeOp:
             case(instr_d[14:12])
@@ -400,6 +411,7 @@ always_comb begin : execute_block  //
             end
             default: ;
         endcase
+        default: ;
     endcase
 end
 

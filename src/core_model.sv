@@ -399,7 +399,7 @@ always_comb begin : execute_block  //
                     rd_data = rs1_data >> rs2_data;
                 end else if(instr_d[31:25] == F7_SRA) begin
                     rf_write_enable = 1'b1;
-                    rd_data = rs1_data >>> rs2_data;
+                    rd_data = $signed(rs1_data) >>> rs2_data; //Aritmetik şekilde sağa kaydırmak için hem >>> hem de $signed ifadesi kullanmamız lazım aynı anda
                 end
             F3_OR: begin
                 rf_write_enable = 1'b1;

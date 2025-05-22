@@ -1024,6 +1024,48 @@ package riscv_pkg;
       logic valid;
     } rd_port_t;
 
+    typedef enum logic [5:0]
+    {
+      LUI,
+      AUIPC,
+      JAL,
+      JALR,
+      BEQ,
+      BNE,
+      BLT,
+      BGE,
+      BLTU,
+      BGEU,
+      LB,
+      LH,
+      LW,
+      LBU,
+      LHU,
+      SB,
+      SH,
+      SW,
+      ADDI,
+      SLTI,
+      SLTIU,
+      XORI,
+      ORI,
+      ANDI,
+      SLLI,
+      SRLI,
+      SRAI,
+      ADD,
+      SUB,
+      SLL,
+      SLT,
+      SLTU,
+      XOR,
+      SRL,
+      SRA,
+      OR,
+      AND
+    } operation_e;   // ALU'ya göndermek için kullanılan opcode'ları enum haline getirdik ki daha kolay okunabilsin kod. Execute aşamasında opcode ile değil
+                     // direkt enum değerine göre hangi işlemi yapacağımıza karar vericez.
+
     
   typedef enum logic [5:0] {
     LUI,

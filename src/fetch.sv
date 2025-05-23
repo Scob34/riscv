@@ -6,19 +6,19 @@ module fetch
     input  logic [XLEN-1:0] next_pc_i,           //bir sonraki program counter değeri
     input  logic            next_pc_enable_i,    //bir sonraki program counter ı güncellemeye izin verip vermediğini belirten sinyal
     output logic [XLEN-1:0] pc_o,                //program counter çıkış değeri, program counter'ı dışarıya verebilmek için.
-    output logic [XLEN-1:0] instr_o,            //instruction çıkış değeri, instruction'ı dışarıya verebilmek için.
+    output logic [XLEN-1:0] instr_o            //instruction çıkış değeri, instruction'ı dışarıya verebilmek için.
 );
 
-paramete int MEM_SIZE = 2048; // Memory tanımlamalarında bu parametreyi kullanacağız.
+//parameter int MEM_SIZE = 2048; // Memory tanımlamalarında bu parametreyi kullanacağız.
 logic [31:0] iMem [MEM_SIZE-1:0]; //instruction memory, instruction'ları saklamak için kullandığımız bellek
 initial $readmemh("./test/test.hex", iMem, 0, MEM_SIZE);
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 //program counter + instruction tanımlamaları
-logic [XLEN-1:0] pc_d; // program counter'ın girişi. Yani sıradaki program counter değerini ifade eder.
-logic [XLEN-1:0] pc_q; // program counter'ın çıkışı. Yani şu anki kullanılan program counter değerini ifade eder.
-assign pc_o       = pc_q; // O anki program counter değerini pc_o ile dışarıya veriyoruz.
+logic [XLEN-1:0] pc_d;   // program counter'ın girişi. Yani sıradaki program counter değerini ifade eder.
+logic [XLEN-1:0] pc_q;   // program counter'ın çıkışı. Yani şu anki kullanılan program counter değerini ifade eder.
+assign pc_o      = pc_q; // O anki program counter değerini pc_o ile dışarıya veriyoruz.
 
 always_ff @(posedge clk_i or negedge rstn_i) begin  : programCounter_change_flipFlop  // program counter'ın değiştiği blok
     if(!rstn_i) begin

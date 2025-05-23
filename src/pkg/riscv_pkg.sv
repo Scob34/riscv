@@ -1026,6 +1026,7 @@ package riscv_pkg;
 
     typedef enum logic [5:0]
     {
+      ZERO = 6'b0,
       LUI,
       AUIPC,
       JAL,
@@ -1062,51 +1063,12 @@ package riscv_pkg;
       SRL,
       SRA,
       OR,
-      AND
+      AND,
+      UNKNOWN
     } operation_e;   // ALU'ya göndermek için kullanılan opcode'ları enum haline getirdik ki daha kolay okunabilsin kod. Execute aşamasında opcode ile değil
                      // direkt enum değerine göre hangi işlemi yapacağımıza karar vericez.
-
     
-  typedef enum logic [5:0] {
-    LUI,
-    AUIPC,
-    JAL,
-    JALR,
-    BEQ,
-    BNE,
-    BLT,
-    BGE,
-    BLTU,
-    BGEU,
-    LB,
-    LH,
-    LW,
-    LBU,
-    LHU,
-    SB,
-    SH,
-    SW,
-    ADDI,
-    SLTI,
-    SLTIU,
-    XORI,
-    ORI,
-    ANDI,
-    SLLI,
-    SRLI,
-    SRAI,
-    ADD,
-    SUB,
-    SLL,
-    SLT,
-    SLTU,
-    XOR,
-    SRL,
-    SRA,
-    OR,
-    AND,
-    UNKNOWN
-  } operation_e;
+    localparam MEM_SIZE = 1024;
 
   // trace log compatible to spikes commit log feature
   // pragma translate_off

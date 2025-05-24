@@ -6,7 +6,7 @@ module execute
     input  logic [XLEN-1:0] pc_i,                 // Decode aşamasından gelenbir sonraki program counter değeri
     input  logic [XLEN-1:0] instruction_i,        // Decode aşamasındn gelen instruction değeri
     input  logic [     4:0] rf_addr_i,            // Register'a yazılacak verinin hangi adresine yazılacağını ifade eder, decode aşamasından geliyor.
-    input  logic            rd_write_enable_i,    // Register'a yazma işlemi yapılıp yapılmayacağını ifade eder, decode aşamasından geliyor.
+    input  logic            rf_write_enable_i,    // Register'a yazma işlemi yapılıp yapılmayacağını ifade eder, decode aşamasından geliyor.
     input  logic            memory_write_enable_i,// Hafızaya yazma işlemine karar veren sinyal, decode aşamasından geliyor.
     input  logic [XLEN-1:0] imm_data_i,           // Decode aşamasından gelen immediate değeri
     input  logic [XLEN-1:0] rs1_data_i,           // Decode aşamasından gelen rs1 verisi
@@ -17,11 +17,11 @@ module execute
     output logic            memory_write_enable_o,// Hafızaya yazma işlemine karar veren sinyali burada memory aşamasına gönderiyoruz.
     output logic [XLEN-1:0] memory_write_addr_o,  // Hafızaya yazacağımız adresi ifade eder, bu aşamada oluşturup diğer aşamalara gönderiyoruz.
     output logic [XLEN-1:0] memory_write_data_o,  // Hafızaya yazacağımız veriyi ifade eder, bu aşamada oluşturup diğer aşamalara gönderiyoruz.
-    output logic [     9:0] memory_read_addr_o,   // Hafızadan okuyacağımız adresi ifade eder, bu aşamada oluşturup diğer aşamalara gönderiyoruz.
+    output logic [XLEN-1:0] memory_read_addr_o,   // Hafızadan okuyacağımız adresi ifade eder, bu aşamada oluşturup diğer aşamalara gönderiyoruz.
     output logic            memory_read_enable_o, // Hafızadan okuma işlemi yapılıp yapılmayacağını ifade eder, bu aşamada oluşturup diğer aşamalara gönderiyoruz.
     output logic [XLEN-1:0] alu_data_o,            // Register'a yazılacak veriyi ifade eder ve memory aşamasına gönderiyoruz.
     output logic [     4:0] rf_addr_o,            // Verinin register'ın hangi adresine yazılacağını ifade eder.
-    output logic            rd_write_enable_o,    // Register'a yazma işlemi yapılıp yapılmayacağını ifade eder.
+    output logic            rf_write_enable_o,    // Register'a yazma işlemi yapılıp yapılmayacağını ifade eder.
     output logic [XLEN-1:0] pc_o,                 // MEMORY aşamasına gidecek olan pc değeri
     output logic [XLEN-1:0] instruction_o,        // MEMORY aşamasına gidecek olan instruction değeri
     output logic            next_pc_enable_o,     // Branch olacak mı olmayacak mı onu ifade eder. Eğer 1 olursa next_pc pc_i + 4 değil de branch için hesaplanan next_pc_d değeri olur.
@@ -33,14 +33,19 @@ module execute
     logic [XLEN-1:0] alu_data_d; // Register'a yazılacak veriyi ifade eden geçici değişken, sonrasında bu değişkeni flip flop içinde alu_data_d'ya aktaracağız.
     logic [XLEN-1:0] memory_write_data_d; // Hafızaya yazacağımız veriyi ifade eden geçici değişken, sonrasında bu değişkeni flip flop içinde memory_write_data_d'ya aktaracağız.
     logic [XLEN-1:0] memory_write_addr_d; // Hafızaya yazacağımız adresi ifade eden geçici değişken, sonrasında bu değişkeni flip flop içinde memory_write_addr_d'ya aktaracağız.
-    logic [     9:0] memory_read_addr_d;   // Hafızadan okuyacağımız adresi ifade eden geçici değişken, sonrasında bu değişkeni flip flop içinde memory_read_addr_o'ya aktaracağız.
+    logic [XLEN-1:0] memory_read_addr_d;   // Hafızadan okuyacağımız adresi ifade eden geçici değişken, sonrasında bu değişkeni flip flop içinde memory_read_addr_o'ya aktaracağız.
     logic            memory_read_enable_d; // Hafızadan okuma işlemi yapılıp yapılmayacağını ifade eden geçici değişken, sonrasında bu değişkeni flip flop içinde memory_read_enable_d'ya aktaracağız.
+    logic [XLEN-1:0] memory_read_addr_sum;
 
 always_comb begin : execute_block  //
     // Burada eğer herhangi bir case durumuna girmezsek, bir önceki değeri tutup latch oluşturmasın diye en başta bütün verileri sıfırlıyoruz.
     next_pc_enable_d      = 0;
     next_pc_d             = 0;
     alu_data_d            = 0;
+    memory_read_addr_d    = 0;
+    memory_read_enable_d  = 0;
+    memory_read_addr_sum  = 0;
+    
 
     //----------------------------------------------------------------------------------------------------------------------------------------- 
     case(instruction_i[6:0])
@@ -90,7 +95,8 @@ always_comb begin : execute_block  //
              default: ; 
             endcase
         OpcodeLoad: begin
-            memory_read_addr_d   = rs1_data_i[$clog2(MEM_SIZE)-1:0];    //rs1_data_i[$clog2[MEM_SIZE]-1:0] bu ifade ile rs1_data_i[9:0] şeklinde 10 bitlik bir değer gelicek ve bunun sayesinde dMem
+            memory_read_addr_sum = rs1_data_i + imm_data_i; //rs1_data_i[$clog2[MEM_SIZE]-1:0] bu ifade ile rs1_data_i[9:0] şeklinde 10 bitlik bir değer gelicek ve bunun sayesinde dMem
+            memory_read_addr_d   = memory_read_addr_sum;   //rs1_data_i[$clog2[MEM_SIZE]-1:0] bu ifade ile rs1_data_i[9:0] şeklinde 10 bitlik bir değer gelicek ve bunun sayesinde dMem
                                                                         //içerisindeki 0-1023 adresten birine erişicez sonrasında bu adres içindeki [7:0] 8 bitlik veriyi rd_data[7:0] a aktarıcaz çünkü
                                                                         //LB(LOAD BYTE) yapıyoruz yani 1 byte(8 bit) lik bir yükleme yapıyoruz bu nedenle son 8 biti[7:0] çekiyoruz.
             memory_read_enable_d = 1'b1; // hafızadan okuma işlemi yapacağımızı ifade eden sinyal
@@ -172,17 +178,17 @@ end
 
 always_ff @(posedge clk_i or negedge rstn_i) begin
     if(!rstn_i) begin
-        // Burada reset sinyali 0 olursa alu_data_o, next_pc_enable_o, next_pc_o, pc_o, instruction_o, rf_addr_o, rd_write_enable_o değerlerini sıfırlıyoruz.
+        // Burada reset sinyali 0 olursa alu_data_o, next_pc_enable_o, next_pc_o, pc_o, instruction_o, rf_addr_o, rf_write_enable_o değerlerini sıfırlıyoruz.
         alu_data_o             <= 32'b0; 
         next_pc_enable_o       <= 1'b0; 
         next_pc_o              <= 32'b0; 
         pc_o                   <= 32'b0; 
         instruction_o          <= 32'b0; 
         rf_addr_o              <= 5'b0; 
-        rd_write_enable_o      <= 1'b0; 
+        rf_write_enable_o      <= 1'b0; 
         memory_write_enable_o  <= 1'b0;
         operation_o            <= ZERO; // Burada operation_o'yu sıfırlıyoruz çünkü işlem türünü ifade ediyor.
-        memory_read_addr_o     <= 10'b0;
+        memory_read_addr_o     <= 32'b0;
         memory_read_enable_o   <= 1'b0; 
     end else begin
         // Burada ALU'dan gelen veriyi ALU'dan çıkışa aktarıyoruz.
@@ -192,7 +198,7 @@ always_ff @(posedge clk_i or negedge rstn_i) begin
         pc_o                   <= pc_i; // Program counter'ı dışarıya aktarıyoruz.
         instruction_o          <= instruction_i; // Instruction'ı dışarıya aktarıyoruz.
         rf_addr_o              <= rf_addr_i; // Register'a yazılacak verinin hangi adresine yazılacağını ifade eden değeri dışarıya aktarıyoruz.
-        rd_write_enable_o      <= rd_write_enable_i; // Register'a yazma işlemi yapılıp yapılmayacağını ifade eden değeri dışarıya aktarıyoruz.
+        rf_write_enable_o      <= rf_write_enable_i; // Register'a yazma işlemi yapılıp yapılmayacağını ifade eden değeri dışarıya aktarıyoruz.
         memory_write_enable_o  <= memory_write_enable_i; // Hafızaya yazma işlemi yapılıp yapılmayacağını ifade eden değeri dışarıya aktarıyoruz. 
         memory_write_data_o    <= memory_write_data_d; // Hafızaya yazacağımız veriyi dışarıya aktarıyoruz.
         memory_write_addr_o    <= memory_write_addr_d; // Hafızaya yazacağımız adresi dışarıya aktarıyoruz.

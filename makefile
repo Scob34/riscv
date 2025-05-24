@@ -7,7 +7,7 @@ lint:
 	@echo "----------------------------------------"
 	verilator --lint-only -Wall -Wno-UNUSED --timing $(ALL_FILES)
 build:
-	verilator --binary $(SV_FILES) ./tb/tb.sv --top tb -j 0 --trace -Wno-UNOPTFLAT -Wno-MULTIDRIVEN
+	verilator --binary $(SV_FILES) ./tb/tb.sv --top tb -j 0 --trace -Wno-UNOPTFLAT
 run: build
 	./obj_dir/Vtb
 

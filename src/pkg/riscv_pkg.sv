@@ -1068,7 +1068,7 @@ package riscv_pkg;
     } operation_e;   // ALU'ya göndermek için kullanılan opcode'ları enum haline getirdik ki daha kolay okunabilsin kod. Execute aşamasında opcode ile değil
                      // direkt enum değerine göre hangi işlemi yapacağımıza karar vericez.
     
-    localparam MEM_SIZE = 1024;
+    localparam MEM_SIZE = 2048;
 
   // trace log compatible to spikes commit log feature
   // pragma translate_off

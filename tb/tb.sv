@@ -1,13 +1,15 @@
 module tb ();
-    logic [riscv_pkg::XLEN-1:0] addr;
-    logic [riscv_pkg::XLEN-1:0] data;
-    logic [riscv_pkg::XLEN-1:0] pc;
-    logic                       update;
-    logic                       clk;
-    logic                       rstn;
-    logic [riscv_pkg::XLEN-1:0] instr;
-    logic [                4:0] reg_addr;
-    logic [riscv_pkg::XLEN-1:0] reg_data;
+    import riscv_pkg::*;
+    
+    logic           clk;
+    logic           rstn;
+    logic [XLEN-1:0] pc;
+    logic [XLEN-1:0] instr;
+    logic [     4:0] reg_addr;
+    logic [XLEN-1:0] reg_data;
+    //logic [XLEN-1:0] mem_addr;
+    //logic [XLEN-1:0] mem_data;
+    logic            update;
 
     //test.log ile pc.log karşılaştırması yaparken daha rahat edebilmek için instr, reg_addr ve reg_data'yı ekledik ki program counter(pc) yanında bunları da
     //ekrana basalım ve test.log ile aynı formatta olsun.
@@ -15,12 +17,10 @@ module tb ();
         .clk_i(clk),
         .rstn_i(rstn),
         .pc_o(pc),
-        .addr_i(addr),
-        .data_o(data),
-        .update_o(update),
         .instr_o(instr),
         .reg_addr_o(reg_addr),
-        .reg_data_o(reg_data)
+        .reg_data_o(reg_data),
+        .reg_update_o(update)
     );
 
     initial begin
@@ -58,11 +58,11 @@ module tb ();
 
         #4000; //10000 birim saniye bekliyoruz 
 
-        //
+        /*
         for(int i = 0; i<10; i++) begin
-            addr = i;
-            $display("data @ mem[0x%8h] = %8h", addr, data);  //memory'nin hangi adresinde hangi data varsa onu ekrana basıyoruz.
-        end
+            mem_addr = i;
+            $display("data @ mem[0x%8h] = %8h", mem_addr, mem_data);  //memory'nin hangi adresinde hangi data varsa onu ekrana basıyoruz.
+        end*/
 
         $finish;
     end
